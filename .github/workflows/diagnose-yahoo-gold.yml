@@ -1,0 +1,20 @@
+name: Diagnose Yahoo gold symbol
+
+# Manual, one-off diagnostic only — no schedule, no secrets needed (Yahoo's
+# chart API is keyless). Run it once from the Actions tab, read the log,
+# done. It never writes to data/latest.json and doesn't affect verify.yml.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check candidate gold symbols
+        run: python3 diagnose_yahoo_gold.py
