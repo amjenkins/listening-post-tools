@@ -1,0 +1,22 @@
+name: Diagnose Twelve Data coverage
+
+# Manual, one-off diagnostic only — no schedule. Run it once from the
+# Actions tab, read the log, then this workflow's job is done. It never
+# writes to data/latest.json and has no effect on the daily verify.yml job.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check Twelve Data plan coverage
+        env:
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+        run: python3 diagnose_twelvedata.py
