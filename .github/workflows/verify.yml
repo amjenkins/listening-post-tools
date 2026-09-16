@@ -1,0 +1,50 @@
+name: Verify macro indicators
+
+on:
+  schedule:
+    # 19:30 UTC = 3:30pm EDT / 2:30pm EST — moved earlier from the original
+    # 21:30 UTC slot (2026-09-16) because GitHub's own scheduled-workflow
+    # queue has been running this job ~2-2.5 hours late every weekday
+    # (confirmed: Sep 14 fired at 23:56 UTC, Sep 15 at 23:35 UTC, both
+    # against a 21:30 UTC target) — well past the ~21:00-22:00 UTC window
+    # The Listening Post's own report-drafting pass checks this data.
+    # 19:30 UTC banks real margin against that delay on both EDT and EST
+    # (no seasonal adjustment needed — see note below) while still running
+    # comfortably after the 4:00pm ET market close either way:
+    # 19:30 UTC is 3:30pm EDT and 2:30pm EST, both before the close, but
+    # the underlying Yahoo Finance data it reads is the *previous* trading
+    # day's already-settled close by the time this runs, so pre-close
+    # timing here does not create a stale-quote risk the way it would if
+    # this were trying to catch same-day intraday data.
+    - cron: "30 19 * * 1-5"
+  workflow_dispatch: {}   # lets you trigger a run manually from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run verification
+        env:
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+        run: python3 verify_indicators.py
+
+      - name: Commit result
+        run: |
+          git config user.name "listening-post-verifier"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/latest.json
+          if git diff --cached --quiet; then
+            echo "No change in data/latest.json — nothing to commit."
+          else
+            git commit -m "Update macro indicators verification $(date -u +%Y-%m-%d)"
+            git push
+          fi
